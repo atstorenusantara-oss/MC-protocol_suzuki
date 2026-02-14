@@ -53,55 +53,72 @@ def main():
     # Inisialisasi PLC
     plc = Type3E()
     
+    # Inisialisasi Koneksi MySQL di luar loop agar hemat resource
+    conn = None
+    
     print("Program dimulai. Tekan Ctrl+C untuk berhenti.")
     
     while True:
         try:
-            # Hubungkan ke PLC jika belum terhubung
+            # 1. Pastikan terhubung ke PLC
             if not plc._is_connected:
                 print(f"Menghubungkan ke PLC {PLC_IP}:{PLC_PORT}...")
                 plc.connect(PLC_IP, PLC_PORT)
                 print("Berhasil terhubung ke PLC.")
 
-            # Range B0 sampai B7FF (0x0 sampai 0x7FF)
+            # 2. Pastikan terhubung ke MySQL
+            if conn is None or not conn.open:
+                print(f"Menghubungkan ke MySQL {MYSQL_HOST}...")
+                conn = pymysql.connect(
+                    host=MYSQL_HOST,
+                    user=MYSQL_USER,
+                    password=MYSQL_PASSWORD,
+                    database=MYSQL_DB,
+                    autocommit=True
+                )
+                print("Berhasil terhubung ke MySQL.")
+            
+            cursor = conn.cursor()
+
+            # 3. Baca data dari PLC (B0 - B7FF = 2048 bit)
             start_address = "B0"
             count = 2048
-            
-            # Baca data dari PLC
             bits_data = plc.batchread_bitunits(start_address, count)
             
-            # Persiapkan data untuk MySQL
+            # 4. Simpan/Update ke Database
             now = datetime.datetime.now()
             
-            # Simpan/Update ke Database
-            conn = pymysql.connect(
-                host=MYSQL_HOST,
-                user=MYSQL_USER,
-                password=MYSQL_PASSWORD,
-                database=MYSQL_DB,
-                autocommit=True
-            )
-            cursor = conn.cursor()
+            # Gunakan ON DUPLICATE KEY UPDATE supaya:
+            # - Jika address belum ada -> INSERT
+            # - Jika address sudah ada -> UPDATE
+            sql = """
+                INSERT INTO plc_b_relay (address, value, updated_at) 
+                VALUES (%s, %s, %s) 
+                ON DUPLICATE KEY UPDATE value = VALUES(value), updated_at = VALUES(updated_at)
+            """
             
-            # Menggunakan query UPDATE
-            sql = "UPDATE plc_b_relay SET value = %s, updated_at = %s WHERE address = %s"
+            # Format data: (address, value, updated_at)
+            data_to_save = [(f"B{i:X}", int(val), now) for i, val in enumerate(bits_data)]
             
-            # Format data untuk UPDATE: (value, updated_at, address)
-            data_to_update = [(int(val), now, f"B{i:X}") for i, val in enumerate(bits_data)]
+            cursor.executemany(sql, data_to_save)
             
-            cursor.executemany(sql, data_to_update)
-            conn.close()
-            
-            # Output status setiap pembacaan (opsional, bisa dihapus jika terlalu ramai)
-            # print(f"[{now.strftime('%H:%M:%S.%f')[:-3]}] Data diperbarui.")
+            # Debug: Beri info setiap 10 detik agar tidak terlalu ramai
+            if int(time.time()) % 10 == 0:
+                print(f"[{now.strftime('%H:%M:%S')}] OK - Sync 2048 addresses.")
             
         except Exception as e:
             print(f"Kesalahan: {e}")
             print("Mencoba lagi dalam 2 detik...")
+            
+            # Tutup koneksi jika error agar bisa reconnect dengan bersih
             try:
-                plc.close()
-            except:
-                pass
+                if plc._is_connected: plc.close()
+            except: pass
+            
+            try:
+                if conn and conn.open: conn.close()
+            except: pass
+            
             time.sleep(2)
             continue
             
