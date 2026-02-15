@@ -21,7 +21,7 @@ if %errorlevel% neq 0 (
 ) else (
     echo.
     echo [SUCCESS] Library berhasil diinstal!
-    echo Anda sekarang bisa menjalankan: python plc_to_mysql.py
+    echo Anda sekarang bisa menjalankan: python Suzuki_PLC_get.py
 )
 
 echo.

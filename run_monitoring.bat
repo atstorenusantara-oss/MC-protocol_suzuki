@@ -1,17 +1,17 @@
 @echo off
-title PLC Monitoring Service
+title Suzuki PLC Monitoring Service
 :: Mengarahkan lokasi ke folder tempat script berada
 cd /d "%~dp0"
 
 echo ======================================================
-echo   Starting PLC to MySQL Monitoring Service
-echo   Interval: 500ms
+echo   Starting Suzuki PLC Monitoring System
+echo   Interval: 3 Seconds
 echo ======================================================
 echo.
 
 :loop
 :: Jalankan program python
-python plc_to_mysql.py
+python Suzuki_PLC_get.py
 
 :: Jika program berhenti/crash karena error, tunggu 5 detik lalu restart otomatis
 echo.

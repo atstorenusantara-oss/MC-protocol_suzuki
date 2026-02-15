@@ -7,8 +7,8 @@ try:
     
     # Membaca data dari alamat B0 (sama dengan B000 dalam format Hex)
     # Membaca 5 unit word (masing-masing 16 bit)
-    data = plc.batchread_wordunits("W3C0", 2)
-    print(f"Data terbaca dari W: {data}")
+    data = plc.batchread_wordunits("W400", 2)
+    print(f"Data terbaca dari B0: {data}")
 
 except Exception as e:
     print(f"Gagal terhubung atau membaca dari PLC: {e}")

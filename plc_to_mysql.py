@@ -40,7 +40,62 @@ def setup_database():
                 updated_at DATETIME
             )
         """)
+
+        # Buat tabel baru untuk Mapping Error sesuai gambar
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS plc_error_mapping (
+                device VARCHAR(10) PRIMARY KEY,
+                station_id INT,
+                plc_id INT,
+                value TINYINT(1) DEFAULT 0,
+                error_description VARCHAR(255),
+                complete_comment VARCHAR(255),
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )
+        """)
+
+
+        # Buat tabel baru untuk Squence sesuai gambar terbaru
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS squence (
+                device VARCHAR(10) PRIMARY KEY,
+                station_id INT,
+                plc_id INT,
+                value VARCHAR(255) DEFAULT '0',
+                comment VARCHAR(255),
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )
+        """)
+
+
+        # Buat tabel baru untuk NG PLC
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS ng_plc (
+                device VARCHAR(10) PRIMARY KEY,
+                station_id INT,
+                plc_id INT,
+                value VARCHAR(255) DEFAULT '0',
+                comment VARCHAR(255),
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )
+        """)
+        # Buat tabel baru untuk Total Fault
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS total_fault (
+                device VARCHAR(10) PRIMARY KEY,
+                comment VARCHAR(255),
+                station_id INT,
+                line_name VARCHAR(255),
+                value VARCHAR(255) DEFAULT '0',
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )
+        """)
+
         conn.close()
+
+
+
+
         return True
     except Exception as e:
         print(f"Terjadi kesalahan saat setup database: {e}")
